@@ -1,3 +1,4 @@
+## This branch is from pytorch1.0, for fabric.
 # A *Faster* Pytorch Implementation of Faster R-CNN
 
 ## Introduction
