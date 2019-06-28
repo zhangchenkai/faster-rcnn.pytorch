@@ -12,12 +12,12 @@ import numpy as np
 import scipy.io as sio
 import scipy.sparse
 
+from lib.datasets import ds_utils
+from lib.datasets.imdb import imdb
+from lib.datasets.voc_eval import voc_eval
 # TODO: make fast_rcnn irrelevant
 # >>>> obsolete, because it depends on sth outside of this project
 from lib.model.utils.config import cfg
-from . import ds_utils
-from .imdb import imdb
-from .voc_eval import voc_eval
 
 # --------------------------------------------------------
 # Fast R-CNN
@@ -27,35 +27,47 @@ from .voc_eval import voc_eval
 # --------------------------------------------------------
 
 try:
-    xrange          # Python 2
+    xrange  # Python 2
 except NameError:
     xrange = range  # Python 3
+
 
 # <<<< obsolete
 
 
-class pascal_voc(imdb):
-    def __init__(self, image_set, year, devkit_path=None):
-        imdb.__init__(self, 'voc_' + year + '_' + image_set)
-        self._year = year
+class zju_fabric(imdb):
+    def __init__(self, image_set,
+                 data_path='/home/nico/Dataset/Fabric-Final/'):
+        imdb.__init__(self, 'fabric_' + image_set)
+        assert image_set in ['test', 'train_supervised', 'train_unsupervised']
         self._image_set = image_set
-        self._devkit_path = self._get_default_path() if devkit_path is None \
-            else devkit_path
-        self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year)
-        self._classes = ('__background__',  # always index 0
-                         'aeroplane', 'bicycle', 'bird', 'boat',
-                         'bottle', 'bus', 'car', 'cat', 'chair',
-                         'cow', 'diningtable', 'dog', 'horse',
-                         'motorbike', 'person', 'pottedplant',
-                         'sheep', 'sofa', 'train', 'tvmonitor')
-        self._class_to_ind = dict(zip(self.classes, xrange(self.num_classes)))
+
+        self._data_path = data_path
+        self._classes = (
+            '__background__',  # always index 0
+            'defect_p1',
+            'defect_p2',
+            'defect_p3',
+            'defect_p4',
+            'defect_p5',
+            'defect_p6',
+            'defect_p7',
+            'defect_p8',
+            'defect_p9',
+            'defect_p10',
+            'defect_p11',
+            'defect_p12',
+            'defect_p13',
+            'defect_p14',
+            'defect_p15',
+        )
         self._image_ext = '.jpg'
         self._image_index = self._load_image_set_index()
         # Default to roidb handler
         # self._roidb_handler = self.selective_search_roidb
         self._roidb_handler = self.gt_roidb
         self._salt = str(uuid.uuid4())
-        self._comp_id = 'comp4'
+        self._comp_id = 'fabric'
 
         # PASCAL specific config options
         self.config = {'cleanup': True,
@@ -65,8 +77,8 @@ class pascal_voc(imdb):
                        'rpn_file': None,
                        'min_size': 2}
 
-        assert os.path.exists(self._devkit_path), \
-            'VOCdevkit path does not exist: {}'.format(self._devkit_path)
+        assert os.path.exists(self._data_path), \
+            'Dataset path does not exist: {}'.format(self._data_path)
         assert os.path.exists(self._data_path), \
             'Path does not exist: {}'.format(self._data_path)
 
@@ -86,7 +98,7 @@ class pascal_voc(imdb):
         """
         Construct an image path from the image's "index" identifier.
         """
-        image_path = os.path.join(self._data_path, 'JPEGImages',
+        image_path = os.path.join(self._data_path, 'Images',
                                   index + self._image_ext)
         assert os.path.exists(image_path), \
             'Path does not exist: {}'.format(image_path)
@@ -98,19 +110,13 @@ class pascal_voc(imdb):
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
-        image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
+        image_set_file = os.path.join(self._data_path, 'ImageSets', 'All',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
             image_index = [x.strip() for x in f.readlines()]
         return image_index
-
-    def _get_default_path(self):
-        """
-        Return the default path where PASCAL VOC is expected to be installed.
-        """
-        return os.path.join(cfg.DATA_DIR, 'VOCdevkit' + self._year)
 
     def gt_roidb(self):
         """
@@ -149,7 +155,7 @@ class pascal_voc(imdb):
             print('{} ss roidb loaded from {}'.format(self.name, cache_file))
             return roidb
 
-        if int(self._year) == 2007 or self._image_set != 'test':
+        if self._image_set != 'test':
             gt_roidb = self.gt_roidb()
             ss_roidb = self._load_selective_search_roidb(gt_roidb)
             roidb = imdb.merge_roidbs(gt_roidb, ss_roidb)
@@ -162,7 +168,7 @@ class pascal_voc(imdb):
         return roidb
 
     def rpn_roidb(self):
-        if int(self._year) == 2007 or self._image_set != 'test':
+        if self._image_set != 'test':
             gt_roidb = self.gt_roidb()
             rpn_roidb = self._load_rpn_roidb(gt_roidb)
             roidb = imdb.merge_roidbs(gt_roidb, rpn_roidb)
@@ -204,9 +210,9 @@ class pascal_voc(imdb):
         Load image and bounding boxes info from XML file in the PASCAL VOC
         format.
         """
-        filename = os.path.join(self._data_path, 'Annotations', index + '.xml')
+        filename = os.path.join(self._data_path, 'Annotations', 'xmls', index + '.xml')
         tree = ET.parse(filename)
-        objs = tree.findall('object')
+        objs = tree.findall('bbox')
         # if not self.config['use_diff']:
         #     # Exclude the samples labeled as difficult
         #     non_diff_objs = [
@@ -222,32 +228,26 @@ class pascal_voc(imdb):
         overlaps = np.zeros((num_objs, self.num_classes), dtype=np.float32)
         # "Seg" area for pascal is just the box area
         seg_areas = np.zeros((num_objs), dtype=np.float32)
-        ishards = np.zeros((num_objs), dtype=np.int32)
 
         # Load object bounding boxes into a data frame.
-        for ix, obj in enumerate(objs):
-            bbox = obj.find('bndbox')
+        for ix, bbox in enumerate(objs):
             # Make pixel indexes 0-based
-            x1 = float(bbox.find('xmin').text) - 1
-            y1 = float(bbox.find('ymin').text) - 1
+            x1 = float(bbox.find('xmin').text)
+            y1 = float(bbox.find('ymin').text)
             x2 = float(bbox.find('xmax').text) - 1
             y2 = float(bbox.find('ymax').text) - 1
 
-            diffc = obj.find('difficult')
-            difficult = 0 if diffc == None else int(diffc.text)
-            ishards[ix] = difficult
-
-            cls = self._class_to_ind[obj.find('name').text.lower().strip()]
+            cls_idx = int(tree.find('pattern').text) * int(tree.find('defective').text)
             boxes[ix, :] = [x1, y1, x2, y2]
-            gt_classes[ix] = cls
-            overlaps[ix, cls] = 1.0
+            gt_classes[ix] = cls_idx
+            overlaps[ix, cls_idx] = 1.0
             seg_areas[ix] = (x2 - x1 + 1) * (y2 - y1 + 1)
 
         overlaps = scipy.sparse.csr_matrix(overlaps)
 
         return {'boxes': boxes,
                 'gt_classes': gt_classes,
-                'gt_ishard': ishards,
+                # 'gt_ishard': ishards,
                 'gt_overlaps': overlaps,
                 'flipped': False,
                 'seg_areas': seg_areas}
@@ -260,7 +260,7 @@ class pascal_voc(imdb):
     def _get_voc_results_file_template(self):
         # VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
         filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
-        filedir = os.path.join(self._devkit_path, 'results', 'VOC' + self._year, 'Main')
+        filedir = os.path.join(self._data_path, 'results')
         if not os.path.exists(filedir):
             os.makedirs(filedir)
         path = os.path.join(filedir, filename)
@@ -270,7 +270,7 @@ class pascal_voc(imdb):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
-            print('Writing {} VOC results file'.format(cls))
+            print('Writing {} fabric results file'.format(cls))
             filename = self._get_voc_results_file_template().format(cls)
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
@@ -286,20 +286,19 @@ class pascal_voc(imdb):
 
     def _do_python_eval(self, output_dir='output'):
         annopath = os.path.join(
-            self._devkit_path,
-            'VOC' + self._year,
+            self._data_path,
             'Annotations',
+            'xmls',
             '{:s}.xml')
         imagesetfile = os.path.join(
-            self._devkit_path,
-            'VOC' + self._year,
+            self._data_path,
             'ImageSets',
-            'Main',
+            'All',
             self._image_set + '.txt')
-        cachedir = os.path.join(self._devkit_path, 'annotations_cache')
+        cachedir = os.path.join(self._data_path, 'annotations_cache')
         aps = []
         # The PASCAL VOC metric changed in 2010
-        use_07_metric = True if int(self._year) < 2010 else False
+        use_07_metric = True
         print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
@@ -339,7 +338,7 @@ class pascal_voc(imdb):
         cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\'); quit;"' \
-            .format(self._devkit_path, self._get_comp_id(),
+            .format(self._data_path, self._get_comp_id(),
                     self._image_set, output_dir)
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
@@ -366,8 +365,8 @@ class pascal_voc(imdb):
 
 
 if __name__ == '__main__':
-    d = pascal_voc('trainval', '2007')
+    d = zju_fabric('train_supervised')
     res = d.roidb
-    from IPython import embed;
+    from IPython import embed
 
     embed()
