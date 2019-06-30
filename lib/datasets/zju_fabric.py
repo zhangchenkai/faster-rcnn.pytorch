@@ -14,7 +14,7 @@ import scipy.sparse
 
 from lib.datasets import ds_utils
 from lib.datasets.imdb import imdb
-from lib.datasets.voc_eval import voc_eval
+from lib.datasets.zju_fabric_eval import voc_eval
 # TODO: make fast_rcnn irrelevant
 # >>>> obsolete, because it depends on sth outside of this project
 from lib.model.utils.config import cfg
@@ -125,18 +125,18 @@ class zju_fabric(imdb):
         This function loads/saves from/to a cache file to speed up future calls.
         """
         cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as fid:
-                roidb = pickle.load(fid)
-            print('{} gt roidb loaded from {}'.format(self.name, cache_file))
-            return roidb
+
+        # if os.path.exists(cache_file):
+        #     with open(cache_file, 'rb') as fid:
+        #         roidb = pickle.load(fid)
+        #     print('{} gt roidb loaded from {}'.format(self.name, cache_file))
+        #     return roidb
 
         gt_roidb = [self._load_pascal_annotation(index)
                     for index in self.image_index]
         with open(cache_file, 'wb') as fid:
             pickle.dump(gt_roidb, fid, pickle.HIGHEST_PROTOCOL)
         print('wrote gt roidb to {}'.format(cache_file))
-
         return gt_roidb
 
     def selective_search_roidb(self):
@@ -295,7 +295,7 @@ class zju_fabric(imdb):
             'ImageSets',
             'All',
             self._image_set + '.txt')
-        cachedir = os.path.join(self._data_path, 'annotations_cache')
+        cachedir = os.path.join(self._data_path, 'annot_cache_fabric')
         aps = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True
@@ -305,9 +305,9 @@ class zju_fabric(imdb):
         for i, cls in enumerate(self._classes):
             if cls == '__background__':
                 continue
-            filename = self._get_voc_results_file_template().format(cls)
+            result_filename = self._get_voc_results_file_template().format(cls)
             rec, prec, ap = voc_eval(
-                filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
+                result_filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
                 use_07_metric=use_07_metric)
             aps += [ap]
             print('AP for {} = {:.4f}'.format(cls, ap))

@@ -20,7 +20,8 @@ def parse_rec(filename):
     objects = []
     for bbox in tree.findall('bbox'):
         obj_struct = {}
-        obj_struct['name'] = 'defect_p' + tree.find('pattern').text
+        # obj_struct['name'] = 'defect_p' + tree.find('pattern').text
+        obj_struct['name'] = 'defect'
         obj_struct['difficult'] = 0
         obj_struct['bbox'] = [int(bbox.find('xmin').text),
                               int(bbox.find('ymin').text),

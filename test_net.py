@@ -213,7 +213,7 @@ if __name__ == '__main__':
     else:
         thresh = 0.0
 
-    save_name = 'faster_rcnn_10'
+    save_name = 'faster_rcnn_%d' % args.checkepoch
     num_images = len(imdb.image_index)
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_classes)]

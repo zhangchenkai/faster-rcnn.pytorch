@@ -1,4 +1,3 @@
-## This branch is from pytorch1.0, for fabric.
 # A *Faster* Pytorch Implementation of Faster R-CNN
 
 ## Introduction
@@ -148,6 +147,12 @@ cd lib
 python setup.py build develop
 ```
 
+Compile python cocoapi (repository from https://github.com/cocodataset/cocoapi):
+```
+cd lib\python_api_coco
+make
+```
+
 It will compile all the modules you need, including NMS, ROI_Pooing, ROI_Align and ROI_Crop. The default version is compiled with Python 2.7, please compile by yourself if you are using a different python version.
 
 **As pointed out in this [issue](https://github.com/jwyang/faster-rcnn.pytorch/issues/16), if you encounter some error during the compilation, you might miss to export the CUDA paths to your environment.**
@@ -245,3 +250,5 @@ This project is equally contributed by [Jianwei Yang](https://github.com/jwyang)
         Booktitle = {Advances in Neural Information Processing Systems ({NIPS})},
         Year = {2015}
     }
+
+### This branch is from pytorch 1.0+, for fabric dataset.
