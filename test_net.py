@@ -18,8 +18,6 @@ import time
 import cv2
 import numpy as np
 import torch
-from torch.autograd import Variable
-
 from lib.model.faster_rcnn.resnet import resnet
 from lib.model.faster_rcnn.vgg16 import vgg16
 # from model.nms.nms_wrapper import nms
@@ -30,6 +28,7 @@ from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output
 from lib.model.utils.net_utils import vis_detections
 from lib.roi_data_layer.roibatchLoader import roibatchLoader
 from lib.roi_data_layer.roidb import combined_roidb
+from torch.autograd import Variable
 
 try:
     xrange  # Python 2
@@ -84,6 +83,9 @@ def parse_args():
     parser.add_argument('--vis', dest='vis',
                         help='visualization mode',
                         action='store_true')
+
+    parser.add_argument('--ovthresh', type=float, default=0.5, help='overlap threshold for evaluation')
+
     args = parser.parse_args()
     return args
 
@@ -328,8 +330,8 @@ if __name__ == '__main__':
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
 
-    print('Evaluating detections')
-    imdb.evaluate_detections(all_boxes, output_dir)
+    print('Evaluating detections (overlap threshold=%g)' % args.ovthresh)
+    imdb.evaluate_detections(all_boxes, output_dir, ovthresh=args.ovthresh)
 
     end = time.time()
     print("test time: %0.4fs" % (end - start))

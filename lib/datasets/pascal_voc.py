@@ -5,16 +5,16 @@ import os
 import pickle
 import subprocess
 import uuid
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 # import PIL
 import numpy as np
 import scipy.io as sio
 import scipy.sparse
-
 # TODO: make fast_rcnn irrelevant
 # >>>> obsolete, because it depends on sth outside of this project
 from lib.model.utils.config import cfg
+
 from . import ds_utils
 from .imdb import imdb
 from .voc_eval import voc_eval
@@ -318,8 +318,8 @@ class pascal_voc(imdb):
         print('~~~~~~~~')
         print('Results:')
         for ap in aps:
-            print('{:.3f}'.format(ap))
-        print('{:.3f}'.format(np.mean(aps)))
+            print('{:.5f}'.format(ap))
+        print('{:.5f}'.format(np.mean(aps)))
         print('~~~~~~~~')
         print('')
         print('--------------------------------------------------------------')
@@ -344,7 +344,7 @@ class pascal_voc(imdb):
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
         self._write_voc_results_file(all_boxes)
         self._do_python_eval(output_dir)
         if self.config['matlab_eval']:

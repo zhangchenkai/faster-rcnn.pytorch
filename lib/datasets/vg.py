@@ -4,14 +4,14 @@ from __future__ import print_function
 import gzip
 import os
 import pickle
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 import PIL
 import numpy as np
 import scipy.sparse
+from lib.datasets.imdb import imdb
 from model.utils.config import cfg
 
-from lib.datasets.imdb import imdb
 from .vg_eval import vg_eval
 
 # --------------------------------------------------------
@@ -288,7 +288,7 @@ class vg(imdb):
                 'flipped': False,
                 'seg_areas': seg_areas}
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
         self._write_voc_results_file(self.classes, all_boxes, output_dir)
         self._do_python_eval(output_dir)
         if self.config['cleanup']:
@@ -391,7 +391,7 @@ class vg(imdb):
         print('Results:')
         for ap, npos in zip(aps, nposs):
             print('{:.3f}\t{:.3f}'.format(ap, npos))
-        print('{:.3f}'.format(np.mean(aps)))
+        print('{:.5f}'.format(np.mean(aps)))
         print('~~~~~~~~')
         print('')
         print('--------------------------------------------------------------')

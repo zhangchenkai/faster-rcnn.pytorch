@@ -9,7 +9,7 @@ from __future__ import print_function
 
 import os
 import pickle
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 import numpy as np
 

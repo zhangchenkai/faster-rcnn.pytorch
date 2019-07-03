@@ -5,13 +5,12 @@ import os
 import pickle
 import subprocess
 import uuid
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 # import PIL
 import numpy as np
 import scipy.io as sio
 import scipy.sparse
-
 from lib.datasets import ds_utils
 from lib.datasets.imdb import imdb
 from lib.datasets.zju_fabric_binary_eval import voc_eval
@@ -271,7 +270,7 @@ class zju_fabric_binary(imdb):
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
-    def _do_python_eval(self, output_dir='output'):
+    def _do_python_eval(self, output_dir='output', ovthresh=0.5):
         annopath = os.path.join(
             self._data_path,
             'Annotations',
@@ -294,7 +293,7 @@ class zju_fabric_binary(imdb):
                 continue
             result_filename = self._get_voc_results_file_template().format(cls)
             rec, prec, ap = voc_eval(
-                result_filename, annopath, imagesetfile, cls, cachedir, ovthresh=0.5,
+                result_filename, annopath, imagesetfile, cls, cachedir, ovthresh=ovthresh,
                 use_07_metric=use_07_metric)
             aps += [ap]
             print('AP for {} = {:.4f}'.format(cls, ap))
@@ -304,8 +303,8 @@ class zju_fabric_binary(imdb):
         print('~~~~~~~~')
         print('Results:')
         for ap in aps:
-            print('{:.3f}'.format(ap))
-        print('{:.3f}'.format(np.mean(aps)))
+            print('{:.5f}'.format(ap))
+        print('{:.5f}'.format(np.mean(aps)))
         print('~~~~~~~~')
         print('')
         print('--------------------------------------------------------------')
@@ -330,9 +329,9 @@ class zju_fabric_binary(imdb):
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
         self._write_voc_results_file(all_boxes)
-        self._do_python_eval(output_dir)
+        self._do_python_eval(output_dir, ovthresh)
         if self.config['matlab_eval']:
             self._do_matlab_eval(output_dir)
         if self.config['cleanup']:

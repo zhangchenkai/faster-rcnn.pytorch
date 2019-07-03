@@ -15,13 +15,12 @@ import uuid
 
 import numpy as np
 import scipy.sparse
-from model.utils.config import cfg
-# COCO API
-from python_api_coco.pycocotools.coco import COCO
-from python_api_coco.pycocotools.cocoeval import COCOeval
-
 from lib.datasets import ds_utils
 from lib.datasets.imdb import imdb
+# COCO API
+from lib.python_api_coco.pycocotools.coco import COCO
+from lib.python_api_coco.pycocotools.cocoeval import COCOeval
+from model.utils.config import cfg
 
 
 class coco(imdb):
@@ -300,7 +299,7 @@ class coco(imdb):
         with open(res_file, 'w') as fid:
             json.dump(results, fid)
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
         res_file = osp.join(output_dir, ('detections_' +
                                          self._image_set +
                                          self._year +

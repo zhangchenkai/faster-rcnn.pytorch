@@ -14,13 +14,13 @@ import pdb
 import pickle
 import subprocess
 import uuid
-import xml.etree.ElementTree as ET
+import xml.etree.cElementTree as ET
 
 import numpy as np
 import scipy.sparse
+from lib.datasets.imdb import imdb
 from model.utils.config import cfg
 
-from lib.datasets.imdb import imdb
 from .voc_eval import voc_eval
 
 
@@ -279,7 +279,7 @@ class pascal_voc(imdb):
         print(('Running:\n{}'.format(cmd)))
         status = subprocess.call(cmd, shell=True)
 
-    def evaluate_detections(self, all_boxes, output_dir):
+    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
         pdb.set_trace()
         self._write_voc_results_file(all_boxes)
         self._do_python_eval(output_dir)
