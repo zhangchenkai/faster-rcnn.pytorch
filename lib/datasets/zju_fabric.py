@@ -11,12 +11,14 @@ import xml.etree.cElementTree as ET
 import numpy as np
 import scipy.io as sio
 import scipy.sparse
+
 from lib.datasets import ds_utils
 from lib.datasets.imdb import imdb
-from lib.datasets.zju_fabric_eval import voc_eval
+from lib.datasets.zju_eval import voc_eval
 # TODO: make fast_rcnn irrelevant
 # >>>> obsolete, because it depends on sth outside of this project
 from lib.model.utils.config import cfg
+
 
 # --------------------------------------------------------
 # Fast R-CNN
@@ -25,18 +27,9 @@ from lib.model.utils.config import cfg
 # Written by Ross Girshick
 # --------------------------------------------------------
 
-try:
-    xrange  # Python 2
-except NameError:
-    xrange = range  # Python 3
-
-
-# <<<< obsolete
-
 
 class zju_fabric(imdb):
-    def __init__(self, image_set,
-                 data_path='/home/nico/Dataset/Fabric-Final/'):
+    def __init__(self, image_set, data_path='/home/nico/Dataset/Fabric-Final/'):
         imdb.__init__(self, 'fabric_' + image_set)
         assert image_set in ['test', 'train_supervised', 'train_unsupervised']
         self._image_set = image_set
@@ -109,8 +102,7 @@ class zju_fabric(imdb):
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
-        image_set_file = os.path.join(self._data_path, 'ImageSets', 'All',
-                                      self._image_set + '.txt')
+        image_set_file = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
             'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
@@ -123,7 +115,7 @@ class zju_fabric(imdb):
 
         This function loads/saves from/to a cache file to speed up future calls.
         """
-        cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
+        # cache_file = os.path.join(self.cache_path, self.name + '_gt_roidb.pkl')
 
         # if os.path.exists(cache_file):
         #     with open(cache_file, 'rb') as fid:
@@ -133,9 +125,9 @@ class zju_fabric(imdb):
 
         gt_roidb = [self._load_pascal_annotation(index)
                     for index in self.image_index]
-        with open(cache_file, 'wb') as fid:
-            pickle.dump(gt_roidb, fid, pickle.HIGHEST_PROTOCOL)
-        print('wrote gt roidb to {}'.format(cache_file))
+        # with open(cache_file, 'wb') as fid:
+        #     pickle.dump(gt_roidb, fid, pickle.HIGHEST_PROTOCOL)
+        # print('wrote gt roidb to {}'.format(cache_file))
         return gt_roidb
 
     def selective_search_roidb(self):
@@ -194,7 +186,7 @@ class zju_fabric(imdb):
         raw_data = sio.loadmat(filename)['boxes'].ravel()
 
         box_list = []
-        for i in xrange(raw_data.shape[0]):
+        for i in range(raw_data.shape[0]):
             boxes = raw_data[i][:, (1, 0, 3, 2)] - 1
             keep = ds_utils.unique_boxes(boxes)
             boxes = boxes[keep, :]
@@ -256,76 +248,67 @@ class zju_fabric(imdb):
                    else self._comp_id)
         return comp_id
 
-    def _get_voc_results_file_template(self):
-        # VOCdevkit/results/VOC2007/Main/<comp_id>_det_test_aeroplane.txt
-        filename = self._get_comp_id() + '_det_' + self._image_set + '_{:s}.txt'
-        filedir = os.path.join(self._data_path, 'results')
-        if not os.path.exists(filedir):
-            os.makedirs(filedir)
+    def _get_voc_results_file_template(self, output_dir):
+        filedir = os.path.join(output_dir, 'results')
+        os.makedirs(filedir, exist_ok=True)
+
+        filename = self._get_comp_id() + self._image_set + \
+                   '_p%d_{:s}.txt' % self.p_id if self.p_id else '_{:s}.txt'
         path = os.path.join(filedir, filename)
         return path
 
-    def _write_voc_results_file(self, all_boxes):
+    def _write_voc_results_file(self, all_boxes, output_dir):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
             print('Writing {} fabric results file'.format(cls))
-            filename = self._get_voc_results_file_template().format(cls)
+            filename = self._get_voc_results_file_template(output_dir).format(cls)
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
                     dets = all_boxes[cls_ind][im_ind]
                     if dets == []:
                         continue
                     # the VOCdevkit expects 1-based indices
-                    for k in xrange(dets.shape[0]):
+                    for k in range(dets.shape[0]):
                         f.write('{:s} {:.3f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.
                                 format(index, dets[k, -1],
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
     def _do_python_eval(self, output_dir='output', ovthresh=0.5):
-        annopath = os.path.join(
-            self._data_path,
-            'Annotations',
-            'xmls',
-            '{:s}.xml')
-        imagesetfile = os.path.join(
-            self._data_path,
-            'ImageSets',
-            'All',
-            self._image_set + '.txt')
-        cachedir = os.path.join(self._data_path, 'annot_cache_fabric')
+        annopath = os.path.join(self._data_path, 'Annotations', 'xmls', '{:s}.xml')
+
+        imagesetfile = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
+
         aps = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True
-        print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
+        # print('VOC07 metric? ' + ('Yes' if use_07_metric else 'No'))
+
         for i, cls in enumerate(self._classes):
             if cls == '__background__':
                 continue
-            result_filename = self._get_voc_results_file_template().format(cls)
+            result_filename = self._get_voc_results_file_template(output_dir).format(cls)
             rec, prec, ap = voc_eval(
-                result_filename, annopath, imagesetfile, cls, cachedir, ovthresh=ovthresh,
+                result_filename, annopath, imagesetfile, cls, ovthresh=ovthresh,
                 use_07_metric=use_07_metric)
             aps += [ap]
-            print('AP for {} = {:.4f}'.format(cls, ap))
+            # print('AP for {} = {:.4f}'.format(cls, ap))
             with open(os.path.join(output_dir, cls + '_pr.pkl'), 'wb') as f:
                 pickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
-        print('Mean AP = {:.4f}'.format(np.mean(aps)))
-        print('~~~~~~~~')
+        print('mAP@{}: {:.6f}'.format(ovthresh, np.mean(aps)))
         print('Results:')
         for ap in aps:
-            print('{:.5f}'.format(ap))
-        print('{:.5f}'.format(np.mean(aps)))
-        print('~~~~~~~~')
-        print('')
-        print('--------------------------------------------------------------')
-        print('Results computed with the **unofficial** Python eval code.')
-        print('Results should be very close to the official MATLAB eval code.')
-        print('Recompute with `./tools/reval.py --matlab ...` for your paper.')
-        print('-- Thanks, The Management')
-        print('--------------------------------------------------------------')
+            print('{:.6f}'.format(ap))
+        print('{:.6f}'.format(np.mean(aps)))
+        # print('')
+        # print('--------------------------------------------------------------')
+        # print('Results computed with the **unofficial** Python eval code.')
+        # print('Results should be very close to the official MATLAB eval code.')
+        # print('Recompute with `./tools/reval.py --matlab ...` for your paper.')
+        # print('-- Thanks, The Management')
+        # print('--------------------------------------------------------------')
+        return aps
 
     def _do_matlab_eval(self, output_dir='output'):
         print('-----------------------------------------------------')
@@ -342,17 +325,16 @@ class zju_fabric(imdb):
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
-    def evaluate_detections(self, all_boxes, output_dir, ovthresh=0.5):
-        self._write_voc_results_file(all_boxes)
-        self._do_python_eval(output_dir, ovthresh)
-        if self.config['matlab_eval']:
-            self._do_matlab_eval(output_dir)
-        if self.config['cleanup']:
-            for cls in self._classes:
-                if cls == '__background__':
-                    continue
-                filename = self._get_voc_results_file_template().format(cls)
-                os.remove(filename)
+    def evaluate_detections(self, all_boxes, output_dir, overlap_threshs=(0.5, 0.75)):
+        self._write_voc_results_file(all_boxes, output_dir)
+        aps = []
+        for ovthresh in overlap_threshs:
+            print('~~~~~~~~')
+            print('Evaluating detections (overlap threshold=%g)' % ovthresh)
+            ap = self._do_python_eval(output_dir, ovthresh)
+            print('~~~~~~~~')
+            aps.append(ap)
+        return aps
 
     def competition_mode(self, on):
         if on:

@@ -15,12 +15,13 @@ import uuid
 
 import numpy as np
 import scipy.sparse
+from model.utils.config import cfg
+
 from lib.datasets import ds_utils
 from lib.datasets.imdb import imdb
 # COCO API
 from lib.python_api_coco.pycocotools.coco import COCO
 from lib.python_api_coco.pycocotools.cocoeval import COCOeval
-from model.utils.config import cfg
 
 
 class coco(imdb):

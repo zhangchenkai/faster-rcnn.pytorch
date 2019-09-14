@@ -12,12 +12,13 @@ import os
 import pdb
 import pickle
 import pprint
-import sys
 import time
 
 import cv2
 import numpy as np
 import torch
+from torch.autograd import Variable
+
 from lib.model.faster_rcnn.resnet import resnet
 from lib.model.faster_rcnn.vgg16 import vgg16
 # from model.nms.nms_wrapper import nms
@@ -28,7 +29,6 @@ from lib.model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output
 from lib.model.utils.net_utils import vis_detections
 from lib.roi_data_layer.roibatchLoader import roibatchLoader
 from lib.roi_data_layer.roidb import combined_roidb
-from torch.autograd import Variable
 
 try:
     xrange  # Python 2
@@ -90,9 +90,10 @@ def parse_args():
     return args
 
 
-lr = cfg.TRAIN.LEARNING_RATE
-momentum = cfg.TRAIN.MOMENTUM
-weight_decay = cfg.TRAIN.WEIGHT_DECAY
+#
+# lr = cfg.TRAIN.LEARNING_RATE
+# momentum = cfg.TRAIN.MOMENTUM
+# weight_decay = cfg.TRAIN.WEIGHT_DECAY
 
 if __name__ == '__main__':
 
@@ -113,11 +114,11 @@ if __name__ == '__main__':
     elif args.dataset == "zju_fabric":
         args.imdb_name = "fabric_train_supervised"
         args.imdbval_name = "fabric_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
+        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
     elif args.dataset == 'zju_fabric_binary':
         args.imdb_name = "fabric_binary_train_supervised"
         args.imdbval_name = "fabric_binary_test"
-        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]', 'MAX_NUM_GT_BOXES', '20']
+        args.set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
 
     elif args.dataset == "pascal_voc_0712":
         args.imdb_name = "voc_2007_trainval+voc_2012_trainval"
@@ -221,11 +222,10 @@ if __name__ == '__main__':
                  for _ in xrange(imdb.num_classes)]
 
     output_dir = get_output_dir(imdb, save_name)
-    dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1, \
+    dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1,
                              imdb.num_classes, training=False, normalize=False)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
-                                             shuffle=False, num_workers=0,
-                                             pin_memory=True)
+                                             shuffle=False, num_workers=0, pin_memory=True)
 
     data_iter = iter(dataloader)
 
@@ -317,9 +317,9 @@ if __name__ == '__main__':
         misc_toc = time.time()
         nms_time = misc_toc - misc_tic
 
-        sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
-                         .format(i + 1, num_images, detect_time, nms_time))
-        sys.stdout.flush()
+        # sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
+        #                  .format(i + 1, num_images, detect_time, nms_time))
+        # sys.stdout.flush()
 
         if vis:
             cv2.imwrite('result.png', im2show)

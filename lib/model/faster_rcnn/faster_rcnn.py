@@ -131,4 +131,4 @@ class _fasterRCNN(nn.Module):
 
     def create_architecture(self):
         self._init_modules()
-        self._init_weights()
+        # self._init_weights()

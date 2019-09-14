@@ -28,15 +28,15 @@ from lib.model.utils.config import cfg
 # --------------------------------------------------------
 
 
-class zju_fabric_binary(imdb):
-    def __init__(self, image_set, data_path='/home/nico/Dataset/Fabric-Final/',
-                 p_id=None):
-        imdb.__init__(self, 'fabric_binary_' + image_set)
+class zju_industry_binary(imdb):
+    def __init__(self, image_set, data_path='/home/nico/Dataset/Industry-Final/',
+                 p_name=None):
+        imdb.__init__(self, 'industry_binary_' + image_set)
         assert image_set in ['test', 'train_supervised', 'train_unsupervised']
         self._image_set = image_set
         self._data_path = data_path
 
-        self.p_id = p_id
+        self.p_name = p_name
 
         self._classes = (
             '__background__',  # always index 0
@@ -48,7 +48,7 @@ class zju_fabric_binary(imdb):
         # self._roidb_handler = self.selective_search_roidb
         self._roidb_handler = self.gt_roidb
         self._salt = str(uuid.uuid4())
-        self._comp_id = 'fabric_binary'
+        self._comp_id = 'industry_binary'
 
         # PASCAL specific config options
         self.config = {'cleanup': True,
@@ -91,9 +91,9 @@ class zju_fabric_binary(imdb):
         """
         # Example path to image set file:
         # self._devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
-        if self.p_id:
+        if self.p_name:
             image_set_file = os.path.join(self._data_path, 'ImageSets',
-                                          'Patterns', 'p%d_%s.txt' % (self.p_id, self._image_set))
+                                          'Patterns', '%s_%s.txt' % (self.p_name, self._image_set))
         else:
             image_set_file = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
@@ -247,7 +247,7 @@ class zju_fabric_binary(imdb):
         os.makedirs(filedir, exist_ok=True)
 
         filename = self._get_comp_id() + self._image_set + \
-                   '_p%d_{:s}.txt' % self.p_id if self.p_id else '_{:s}.txt'
+                   '_%s_{:s}.txt' % self.p_name if self.p_name else '_{:s}.txt'
         path = os.path.join(filedir, filename)
         return path
 
@@ -255,7 +255,7 @@ class zju_fabric_binary(imdb):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
-            print('Writing {} fabric results file'.format(cls))
+            print('Writing {} Industry results file'.format(cls))
             filename = self._get_voc_results_file_template(output_dir).format(cls)
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
@@ -272,9 +272,9 @@ class zju_fabric_binary(imdb):
     def _do_python_eval(self, output_dir, ovthresh=0.5):
         annopath = os.path.join(self._data_path, 'Annotations', 'xmls', '{:s}.xml')
 
-        if self.p_id:
+        if self.p_name:
             imagesetfile = os.path.join(self._data_path, 'ImageSets',
-                                        'Patterns', 'p%d_%s.txt' % (self.p_id, self._image_set))
+                                        'Patterns', '%s_%s.txt' % (self.p_name, self._image_set))
         else:
             imagesetfile = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
 
@@ -345,7 +345,7 @@ class zju_fabric_binary(imdb):
 
 
 if __name__ == '__main__':
-    d = zju_fabric_binary('train_supervised')
+    d = zju_industry_binary('train_supervised')
     res = d.roidb
     from IPython import embed
 

@@ -7,35 +7,27 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import _init_paths
-import os
-import sys
-import numpy as np
 import argparse
-import pprint
+import os
 import pdb
+import pprint
+import sys
 import time
-import cv2
-import torch
-from torch.autograd import Variable
-import torch.nn as nn
-import torch.optim as optim
 
-import torchvision.transforms as transforms
-import torchvision.datasets as dset
-from scipy.misc import imread
-from roi_data_layer.roidb import combined_roidb
-from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.rpn.bbox_transform import clip_boxes
+import cv2
+import numpy as np
+import torch
+from imageio import imread
+from model.faster_rcnn.resnet import resnet
+from model.faster_rcnn.vgg16 import vgg16
 # from model.nms.nms_wrapper import nms
 from model.roi_layers import nms
 from model.rpn.bbox_transform import bbox_transform_inv
-from model.utils.net_utils import save_net, load_net, vis_detections
+from model.rpn.bbox_transform import clip_boxes
 from model.utils.blob import im_list_to_blob
-from model.faster_rcnn.vgg16 import vgg16
-from model.faster_rcnn.resnet import resnet
-import pdb
+from model.utils.config import cfg, cfg_from_file, cfg_from_list
+from model.utils.net_utils import vis_detections
+from torch.autograd import Variable
 
 try:
     xrange          # Python 2

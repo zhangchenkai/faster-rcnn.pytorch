@@ -17,14 +17,26 @@ from lib.datasets.imagenet import imagenet
 from lib.datasets.vg import vg
 from lib.datasets.zju_fabric import zju_fabric
 from lib.datasets.zju_fabric_binary import zju_fabric_binary
+from lib.datasets.zju_industry_binary import zju_industry_binary
 
-# Set up voc_<year>_<split>
 for split in ['train_supervised', 'test']:
     name = 'fabric_{}'.format(split)
-    __sets[name] = (lambda split=split: zju_fabric(split))
+    __sets[name] = (lambda split=split,: zju_fabric(split))
 
     name = 'fabric_binary_{}'.format(split)
     __sets[name] = (lambda split=split: zju_fabric_binary(split))
+
+    for p_id in range(1, 16):
+        name = 'fabric_binary_p{0}_{1}'.format(p_id, split)
+        __sets[name] = (lambda split=split, p_id=p_id: zju_fabric_binary(image_set=split, p_id=p_id))
+
+for split in ['train_supervised', 'test']:
+    name = 'industry_binary_{}'.format(split)
+    __sets[name] = (lambda split=split: zju_industry_binary(split))
+
+    for p_name in ['sl1604', 'sxl1627', ]:
+        name = 'industry_binary_{0}_{1}'.format(p_name, split)
+        __sets[name] = (lambda split=split, p_name=p_name: zju_industry_binary(image_set=split, p_name=p_name))
 
 # Set up voc_<year>_<split>
 for year in ['2007', '2012']:
@@ -68,11 +80,11 @@ for split in ['train', 'val', 'val1', 'val2', 'test']:
     __sets[name] = (lambda split=split, devkit_path=devkit_path, data_path=data_path: imagenet(split, devkit_path, data_path))
 
 
-def get_imdb(name):
+def get_imdb(name, **kwargs):
     """Get an imdb (image database) by name."""
     if name not in __sets:
         raise KeyError('Unknown dataset: {}'.format(name))
-    return __sets[name]()
+    return __sets[name](**kwargs)
 
 
 def list_imdbs():

@@ -144,7 +144,7 @@ Compile the cuda dependencies using following simple commands:
 
 ```
 cd lib
-python setup.py build develop
+make
 ```
 
 Compile python cocoapi (repository from https://github.com/cocodataset/cocoapi):

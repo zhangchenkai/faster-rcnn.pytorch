@@ -12,6 +12,7 @@ import pickle
 import xml.etree.cElementTree as ET
 
 import numpy as np
+import tqdm
 
 
 def parse_rec(filename):
@@ -112,11 +113,10 @@ def voc_eval(detpath,
   if not os.path.isfile(cachefile):
     # load annotations
     recs = {}
-    for i, imagename in enumerate(imagenames):
+    for i, imagename in tqdm.tqdm(enumerate(imagenames), dynamic_ncols=True):
       recs[imagename] = parse_rec(annopath.format(imagename))
       if i % 100 == 0:
-        print('Reading annotation for {:d}/{:d}'.format(
-          i + 1, len(imagenames)))
+          print('Reading annotation for {:d}/{:d}'.format(i + 1, len(imagenames)))
     # save
     print('Saving cached annotations to {:s}'.format(cachefile))
     with open(cachefile, 'wb') as f:
