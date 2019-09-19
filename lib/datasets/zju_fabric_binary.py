@@ -30,13 +30,26 @@ from lib.model.utils.config import cfg
 
 class zju_fabric_binary(imdb):
     def __init__(self, image_set, data_path='/home/nico/Dataset/Fabric-Final/',
-                 p_id=None):
+                 p_id=None, exclude_id=None):
         imdb.__init__(self, 'fabric_binary_' + image_set)
         assert image_set in ['test', 'train_supervised', 'train_unsupervised']
         self._image_set = image_set
         self._data_path = data_path
 
+        # check dataset mode
+        if p_id:
+            # mode: single pattern
+            assert exclude_id is None
+            assert isinstance(p_id, int)
+        elif exclude_id:
+            # mode: exclude single pattern
+            assert p_id is None
+            assert isinstance(exclude_id, int)
+        else:
+            # mode: all patterns
+            assert p_id is None and exclude_id is None
         self.p_id = p_id
+        self.exclude_id = exclude_id
 
         self._classes = (
             '__background__',  # always index 0
@@ -94,6 +107,9 @@ class zju_fabric_binary(imdb):
         if self.p_id:
             image_set_file = os.path.join(self._data_path, 'ImageSets',
                                           'Patterns', 'p%d_%s.txt' % (self.p_id, self._image_set))
+        elif self.exclude_id:
+            image_set_file = os.path.join(self._data_path, 'ImageSets',
+                                          'ExPatterns', 'ex_p%d_%s.txt' % (self.exclude_id, self._image_set))
         else:
             image_set_file = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
@@ -243,12 +259,17 @@ class zju_fabric_binary(imdb):
         return comp_id
 
     def _get_voc_results_file_template(self, output_dir):
-        filedir = os.path.join(output_dir, 'results')
-        os.makedirs(filedir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
-        filename = self._get_comp_id() + self._image_set + \
-                   '_p%d_{:s}.txt' % self.p_id if self.p_id else '_{:s}.txt'
-        path = os.path.join(filedir, filename)
+        if self.p_id:
+            filename = self._get_comp_id() + self._image_set + '_p%d_{:s}.txt' % self.p_id
+        elif self.exclude_id:
+            filename = self._get_comp_id() + self._image_set + '_ex_p%d_{:s}.txt' % self.exclude_id
+        else:
+            filename = self._get_comp_id() + self._image_set + '_{:s}.txt'
+        print(filename)
+
+        path = os.path.join(output_dir, filename)
         return path
 
     def _write_voc_results_file(self, all_boxes, output_dir):
@@ -275,6 +296,9 @@ class zju_fabric_binary(imdb):
         if self.p_id:
             imagesetfile = os.path.join(self._data_path, 'ImageSets',
                                         'Patterns', 'p%d_%s.txt' % (self.p_id, self._image_set))
+        elif self.exclude_id:
+            imagesetfile = os.path.join(self._data_path, 'ImageSets',
+                                        'ExPatterns', 'ex_p%d_%s.txt' % (self.exclude_id, self._image_set))
         else:
             imagesetfile = os.path.join(self._data_path, 'ImageSets', 'All', self._image_set + '.txt')
 

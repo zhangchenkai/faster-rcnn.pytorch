@@ -249,12 +249,11 @@ class zju_fabric(imdb):
         return comp_id
 
     def _get_voc_results_file_template(self, output_dir):
-        filedir = os.path.join(output_dir, 'results')
-        os.makedirs(filedir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
         filename = self._get_comp_id() + self._image_set + \
                    '_p%d_{:s}.txt' % self.p_id if self.p_id else '_{:s}.txt'
-        path = os.path.join(filedir, filename)
+        path = os.path.join(output_dir, filename)
         return path
 
     def _write_voc_results_file(self, all_boxes, output_dir):

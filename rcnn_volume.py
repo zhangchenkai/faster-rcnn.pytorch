@@ -36,9 +36,6 @@ def parse_args():
     Parse input arguments
     """
     parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
-    parser.add_argument('--dataset', dest='dataset',
-                        help='training dataset',
-                        default='zju_fabric_binary', type=str)
     parser.add_argument('--net', dest='net',
                         help='vgg16, res101',
                         default='vgg16', type=str)
@@ -60,7 +57,7 @@ def parse_args():
                         default="saved_models", type=str)
     parser.add_argument('--nw', dest='num_workers',
                         help='number of worker to load data',
-                        default=8, type=int)
+                        default=4, type=int)
     parser.add_argument('--cuda', dest='cuda',
                         help='cuda device id',
                         default='0', type=str)
@@ -139,6 +136,10 @@ if __name__ == '__main__':
     args = parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
 
+    DATASET = 'fabric_binary'
+    P_TYPE = 'P-%d'
+    P_NUM = 15
+
     print('Called with args:')
     print(args)
 
@@ -147,18 +148,9 @@ if __name__ == '__main__':
         # for ratio in [1.0, ]:
         # test_metrics_list.append({'model_name': 'subset ration = %g' % ratio})
 
-        assert args.dataset == 'zju_fabric_binary'
-
-        if '_ind' in args.dataset:
-            p_type = 'I-%d'
-            p_num = 5
-        else:
-            p_type = 'P-%d'
-            p_num = 15
-
-        for p_id in range(1, p_num + 1):
+        for p_id in range(1, P_NUM + 1):
             # for p_id in [5, ]:
-            p_str = p_type % p_id
+            p_str = P_TYPE % p_id
             print('{0:#^64}'.format('Ratio-%g,' % ratio + p_str))
 
             # ===========================TRAIN============================
@@ -171,24 +163,22 @@ if __name__ == '__main__':
             # if args.set_cfgs is not None:
             #     cfg_from_list(args.set_cfgs)
 
-            args.imdb_name = "fabric_binary_p%d_train_supervised" % p_id
-            imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdb_name)
-
-            # train set
             # -- Note: Use validation set and disable the flipped to enable faster loading.
             if args.cuda:
                 cfg.CUDA = True
             cfg.TRAIN.USE_FLIPPED = True
             cfg.USE_GPU_NMS = True if args.cuda else False
-
             print('Using config:')
             pprint.pprint(cfg)
             # np.random.seed(cfg.RNG_SEED)
 
+            # train set
+            imdb_name = DATASET + "_p%d_train_supervised" % p_id
+            imdb, roidb, ratio_list, ratio_index = combined_roidb(imdb_name)
             train_size = len(roidb)
             print('{:d} roidb entries'.format(train_size))
 
-            output_dir = os.path.join(args.save_dir, args.net, args.dataset, 'ratio-%.2f' % ratio)
+            output_dir = os.path.join(args.save_dir, args.net, DATASET, 'ratio-%.2f' % ratio, 'pattern-%d' % p_id)
             os.makedirs(output_dir, exist_ok=True)
 
             dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size,
@@ -367,8 +357,8 @@ if __name__ == '__main__':
 
             # ===========================TEST============================
             cfg.TRAIN.USE_FLIPPED = False
-            args.imdbval_name = "fabric_binary_p%d_test" % p_id
-            imdb, roidb, ratio_list, ratio_index = combined_roidb(args.imdbval_name, False)
+            imdb_name = DATASET + "_p%d_test" % p_id
+            imdb, roidb, ratio_list, ratio_index = combined_roidb(imdb_name, training=False)
             imdb.competition_mode(on=True)
             print('{:d} roidb entries'.format(len(roidb)))
 
@@ -495,7 +485,7 @@ if __name__ == '__main__':
             # with open(det_file, 'wb') as f:
             #     pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
 
-            ap_thresh = OrderedDict({'pattern': p_id, 'volume': ratio})
+            ap_thresh = OrderedDict({'pattern': p_id, 'volume_ratio': ratio})
             aps = imdb.evaluate_detections(all_boxes, output_dir, overlap_threshs=args.overlap_threshs)
             ap_thresh.update(dict(zip(['AP@0.5', 'AP@0.75'], aps)))
 
@@ -506,4 +496,4 @@ if __name__ == '__main__':
 
             # incremental result saving
             df = pd.DataFrame(test_metrics_list)
-            df.to_csv('~/Desktop/FabricDataset/volume_faster-rcnn.csv')
+            df.to_csv('~/Desktop/FabricDataset/rcnn_volume.csv', index=False)

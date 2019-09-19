@@ -30,6 +30,9 @@ for split in ['train_supervised', 'test']:
         name = 'fabric_binary_p{0}_{1}'.format(p_id, split)
         __sets[name] = (lambda split=split, p_id=p_id: zju_fabric_binary(image_set=split, p_id=p_id))
 
+        name = 'fabric_exclusive_binary_p{0}_{1}'.format(p_id, split)
+        __sets[name] = (lambda split=split, p_id=p_id: zju_fabric_binary(image_set=split, exclude_id=p_id))
+
 for split in ['train_supervised', 'test']:
     name = 'industry_binary_{}'.format(split)
     __sets[name] = (lambda split=split: zju_industry_binary(split))
