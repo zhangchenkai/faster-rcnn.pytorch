@@ -3,15 +3,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import pickle
-
+import PIL
 import datasets
 import numpy as np
-from model.utils.config import cfg
 from datasets.factory import get_imdb
-import PIL
-import numpy as np
+from model.utils.config import cfg
 
 import lib.datasets as datasets
 from lib.datasets.factory import get_imdb
@@ -19,31 +15,14 @@ from lib.model.utils.config import cfg
 
 
 def prepare_roidb(imdb):
-  """Enrich the imdb's roidb by adding some derived quantities that
-  are useful for training. This function precomputes the maximum
-  overlap, taken over ground-truth boxes, between each ROI and
-  each ground-truth box. The class with maximum overlap is also
-  recorded.
-  """
+    """Enrich the imdb's roidb by adding some derived quantities that
+    are useful for training. This function precomputes the maximum
+    overlap, taken over ground-truth boxes, between each ROI and
+    each ground-truth box. The class with maximum overlap is also
+    recorded.
+    """
 
-  roidb = imdb.roidb
-  if not (imdb.name.startswith('coco')):
-    cache_file = os.path.join(imdb.cache_path, imdb.name + '_sizes.pkl')
-    if os.path.exists(cache_file):
-      print('Image sizes loaded from %s' % cache_file)
-      with open(cache_file, 'rb') as f:
-        sizes = pickle.load(f)
-    else:
-      print('Extracting image sizes... (It may take long time)')
-      sizes = [PIL.Image.open(imdb.image_path_at(i)).size
-                for i in range(imdb.num_images)]
-      with open(cache_file, 'wb') as f:
-        pickle.dump(sizes, f)
-      print('Done!!')
-         
-  for i in range(len(imdb.image_index)):
-    roidb[i]['img_id'] = imdb.image_id_at(i)
-    roidb[i]['image'] = imdb.image_path_at(i)
+    roidb = imdb.roidb
     if not (imdb.name.startswith('coco')):
         sizes = [PIL.Image.open(imdb.image_path_at(i)).size
                  for i in range(imdb.num_images)]
@@ -111,44 +90,6 @@ def filter_roidb(roidb):
     print('after filtering, there are %d images...' % (len(roidb)))
     return roidb
 
-def combined_roidb(imdb_names, training=True):
-  """
-  Combine multiple roidbs
-  """
-
-  def get_training_roidb(imdb):
-    """Returns a roidb (Region of Interest database) for use in training."""
-    if cfg.TRAIN.USE_FLIPPED:
-      print('Appending horizontally-flipped training examples...')
-      imdb.append_flipped_images()
-      print('done')
-
-    print('Preparing training data...')
-
-    prepare_roidb(imdb)
-    #ratio_index = rank_roidb_ratio(imdb)
-    print('done')
-
-    return imdb.roidb
-  
-  def get_roidb(imdb_name):
-    imdb = get_imdb(imdb_name)
-    print('Loaded dataset `{:s}`'.format(imdb.name))
-    imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
-    print('Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD))
-    roidb = get_training_roidb(imdb)
-    return roidb
-
-  roidbs = [get_roidb(s) for s in imdb_names.split('+')]
-  roidb = roidbs[0]
-
-  if len(roidbs) > 1:
-    for r in roidbs[1:]:
-      roidb.extend(r)
-    tmp = get_imdb(imdb_names.split('+')[1])
-    imdb = datasets.imdb.imdb(imdb_names, tmp.classes)
-  else:
-    imdb = get_imdb(imdb_names)
 
 def combined_roidb(imdb_names, training=True):
     """
