@@ -1,4 +1,13 @@
 from __future__ import absolute_import
+
+import numpy as np
+import torch
+import torch.nn as nn
+
+from .bbox_transform import bbox_overlaps_batch, bbox_transform_batch
+from ..utils.config import cfg
+
+
 # --------------------------------------------------------
 # Faster R-CNN
 # Copyright (c) 2015 Microsoft
@@ -8,14 +17,6 @@ from __future__ import absolute_import
 # --------------------------------------------------------
 # Reorganized and modified by Jianwei Yang and Jiasen Lu
 # --------------------------------------------------------
-
-import torch
-import torch.nn as nn
-import numpy as np
-import numpy.random as npr
-from ..utils.config import cfg
-from .bbox_transform import bbox_overlaps_batch, bbox_transform_batch
-import pdb
 
 class _ProposalTargetLayer(nn.Module):
     """
@@ -130,8 +131,9 @@ class _ProposalTargetLayer(nn.Module):
         offset = torch.arange(0, batch_size)*gt_boxes.size(1)
         offset = offset.view(-1, 1).type_as(gt_assignment) + gt_assignment
 
-        labels = gt_boxes[:,:,4].contiguous().view(-1).index((offset.view(-1),)).view(batch_size, -1)
-        
+        # changed indexing way for pytorch 1.0
+        labels = gt_boxes[:, :, 4].contiguous().view(-1)[(offset.view(-1),)].view(batch_size, -1)
+
         labels_batch = labels.new(batch_size, rois_per_image).zero_()
         rois_batch  = all_rois.new(batch_size, rois_per_image, 5).zero_()
         gt_rois_batch = all_rois.new(batch_size, rois_per_image, 5).zero_()

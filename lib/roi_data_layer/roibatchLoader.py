@@ -44,8 +44,7 @@ class roibatchLoader(data.Dataset):
                 # for ratio cross 1, we make it to be 1.
                 target_ratio = 1
 
-            self.ratio_list_batch[left_idx:(right_idx + 1)] = \
-                torch.tensor(target_ratio.astype(np.float64))  # trainset ratio list ,each batch is same number
+            self.ratio_list_batch[left_idx:(right_idx + 1)] = target_ratio
 
     def __getitem__(self, index):
         if self.training:
@@ -182,7 +181,7 @@ class roibatchLoader(data.Dataset):
             not_keep = (gt_boxes[:, 0] == gt_boxes[:, 2]) | (gt_boxes[:, 1] == gt_boxes[:, 3])
             keep = torch.nonzero(not_keep == 0).view(-1)
 
-            gt_boxes_padding = torch.FloatTensor(self.max_num_box, gt_boxes.sizøe(1)).zero_()
+            gt_boxes_padding = torch.FloatTensor(self.max_num_box, gt_boxes.size(1)).zero_()
             if keep.numel() != 0:
                 gt_boxes = gt_boxes[keep]
                 num_boxes = min(gt_boxes.size(0), self.max_num_box)

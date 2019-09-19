@@ -178,7 +178,7 @@ if __name__ == '__main__':
             train_size = len(roidb)
             print('{:d} roidb entries'.format(train_size))
 
-            output_dir = os.path.join(args.save_dir, args.net, DATASET, 'ratio-%.2f' % ratio, 'pattern-%d' % p_id)
+            output_dir = os.path.join(args.save_dir, args.net, DATASET, 'volume', 'ratio-%.2f' % ratio, 'pattern-%d' % p_id)
             os.makedirs(output_dir, exist_ok=True)
 
             dataset = roibatchLoader(roidb, ratio_list, ratio_index, args.batch_size,
